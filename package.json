@@ -1,7 +1,4 @@
 {
-  "name": "js-handwriting",
-  "version": "1.0.0",
-  "description": "",
   "type": "module",
   "scripts": {
     "test": "vitest",
@@ -9,9 +6,8 @@
     "format": "prettier --write .",
     "prepare": "husky"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Xiaowhang",
+  "license": "MIT",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
     "husky": "^9.1.7",
