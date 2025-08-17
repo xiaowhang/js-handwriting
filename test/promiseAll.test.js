@@ -1,47 +1,54 @@
 'use strict';
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { promiseAll } from '@/promiseAll.js';
 
-describe('promiseAll', () => {
-  it('对混合的 Promise 和普通值按输入顺序返回结果数组', async () => {
-    const p1 = Promise.resolve(1);
-    const p2 = 2;
-    const p3 = new Promise(resolve => setTimeout(() => resolve(3), 10));
-
-    const res = await promiseAll([p1, p2, p3]);
-    expect(res).toEqual([1, 2, 3]);
+describe('promiseAll - 自定义 Promise.all 实现', () => {
+  describe('各种输入', () => {
+    it.each([
+      { input: [Promise.resolve(1), 2, Promise.resolve(3)], desc: '混合 Promise 和普通值' },
+      { input: 'abc', desc: '字符串' },
+      { input: [], desc: '空数组' },
+      { input: [, 1], desc: '稀疏数组' },
+      { input: new Set([Promise.resolve(1), 2, 3]), desc: 'Set' },
+      { input: [{ then: resolve => resolve(42) }, 1], desc: 'thenable 对象' },
+    ])('$desc', async ({ input }) => {
+      await expect(promiseAll(input)).resolves.toEqual(await Promise.all(input));
+    });
   });
 
-  it('当任一 Promise 拒绝时应整体拒绝', async () => {
-    const p1 = Promise.resolve('a');
-    const p2 = Promise.reject(new Error('fail'));
+  describe('顺序保持', () => {
+    it('无论解析快慢，结果顺序与输入一致', async () => {
+      vi.useFakeTimers();
+      try {
+        const slow = new Promise(r => setTimeout(() => r('slow'), 30));
+        const fast = Promise.resolve('fast');
 
-    await expect(promiseAll([p1, p2])).rejects.toThrow('fail');
+        const input = [slow, fast];
+        // 推进定时器以触发 slow
+        vi.advanceTimersByTime(30);
+        await expect(promiseAll(input)).resolves.toEqual(await Promise.all(input));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
-  it('对空输入应解析为空数组', async () => {
-    const res = await promiseAll([]);
-    expect(res).toEqual([]);
-  });
+  describe('错误处理', () => {
+    it('任一 Promise 拒绝时应整体拒绝', async () => {
+      const p1 = Promise.resolve('a');
+      const p2 = (async () => {
+        throw new Error('fail');
+      })();
 
-  it('对非可迭代值应以 TypeError 拒绝', async () => {
-    await expect(promiseAll(null)).rejects.toBeInstanceOf(TypeError);
-  });
+      const input = [p1, p2];
+      await expect(promiseAll(input)).rejects.toEqual(await Promise.all(input).catch(e => e));
+      await expect(promiseAll(input)).rejects.toThrow('fail');
+      await expect(promiseAll(input)).rejects.toMatchObject({ message: 'fail' });
+    });
 
-  it('无论解析快慢均保持结果顺序与输入一致', async () => {
-    const slow = new Promise(r => setTimeout(() => r('slow'), 30));
-    const fast = Promise.resolve('fast');
-    const res = await promiseAll([slow, fast]);
-    expect(res).toEqual(['slow', 'fast']);
-  });
-
-  it('Set 应按输入顺序返回结果数组', async () => {
-    const p1 = new Promise(resolve => setTimeout(() => resolve(1), 10));
-    const p2 = Promise.resolve(2);
-    const p3 = 3;
-
-    const res = await promiseAll(new Set([p1, p2, p3]));
-    expect(res).toEqual([1, 2, 3]);
+    it('非可迭代值应以 TypeError 拒绝', async () => {
+      await expect(promiseAll(null)).rejects.toBeInstanceOf(TypeError);
+    });
   });
 });
