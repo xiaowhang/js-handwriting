@@ -6,13 +6,16 @@
   "scripts": {
     "test": "vitest",
     "lint": "oxlint --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
     "oxlint": "^1.12.0",
     "prettier": "^3.6.2",
     "vitest": "^3.2.4"
@@ -22,5 +25,9 @@
     "singleQuote": true,
     "printWidth": 240,
     "proseWrap": "never"
+  },
+  "lint-staged": {
+    "**/*.js": "oxlint --fix",
+    "**/*": "prettier --write --ignore-unknown"
   }
 }
