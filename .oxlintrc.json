@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["unicorn", "typescript", "oxc", "vitest"],
+  "rules": {
+    "no-console": "error"
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.test.js"],
+      "rules": {
+        "no-sparse-arrays": "off",
+        "unicorn/no-thenable": "off"
+      }
+    }
+  ]
+}
